@@ -1,0 +1,478 @@
+<!-- Fire Alarm Board — page half. File name in Apps Script: Index.html
+     Paired with Code.gs. Plain HTML: no string building, so a stray quote cannot
+     silently break the page the way it could when this lived inside the .gs file. -->
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Fire Alarm Board</title>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root{
+    --cream:#F3E7CF; --surface:#FBF6EC; --panel:#E9D2BA; --ink:#1C1A17; --muted:#6B6253;
+    --rule:#CDBFA6; --coral:#FF5E3B; --red:#8A0323; --sky:#86A3D0; --olive:#987B00;
+    --wheat:#DBB39B;
+    --display:Archivo,"Helvetica Neue",Helvetica,Arial,sans-serif;
+    --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+    color-scheme:light;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--cream);color:var(--ink);font:400 15px/1.55 var(--display)}
+  .band{background:var(--red);color:var(--cream)}
+  .in{max-width:1120px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));
+      padding-right:max(16px,env(safe-area-inset-right,0px))}
+  .mast{padding-block:18px;display:flex;align-items:center;justify-content:space-between;
+        gap:14px;flex-wrap:wrap}
+  .mast h1{margin:0;font-weight:300;font-size:clamp(23px,4.4vw,32px);letter-spacing:-.02em;
+           line-height:1.05}
+  .right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .fresh{font-family:var(--mono);font-size:11px;padding:4px 10px;border-radius:999px;
+         background:rgba(243,231,207,.18)}
+  .fresh.stale{background:var(--olive);color:#fff}
+  button.rf{font:inherit;font-size:13px;padding:7px 14px;border-radius:7px;cursor:pointer;
+            border:1px solid var(--cream);background:transparent;color:var(--cream)}
+  button.rf:hover{background:var(--cream);color:var(--red)}
+  button.rf:focus-visible{outline:2px solid var(--coral);outline-offset:2px}
+  button.rf[disabled]{opacity:.55;cursor:default}
+  .auto{font-size:11px;opacity:.8;display:flex;align-items:center;gap:5px}
+  main{padding-block:0 60px}
+  .jump{display:grid;gap:12px;grid-template-columns:1fr 1fr;margin-top:18px}
+  @media(max-width:640px){.jump{grid-template-columns:1fr}}
+  .jump a{display:flex;align-items:center;justify-content:space-between;gap:10px;
+          text-decoration:none;background:var(--surface);border:1px solid var(--rule);
+          border-left:4px solid var(--coral);border-radius:4px;padding:16px 18px;color:var(--ink)}
+  .jump a:hover{border-color:var(--ink)}
+  .jump .jt{font-weight:500;font-size:15px;display:block}
+  .jump .jd{color:var(--muted);font-size:12.5px;margin-top:2px;display:block}
+  .jump .arw{font-size:20px;color:var(--coral)}
+  .caps{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;
+        color:var(--muted);margin:26px 0 10px}
+  .tiles{display:grid;gap:12px;grid-template-columns:repeat(4,1fr)}
+  @media(max-width:760px){.tiles{grid-template-columns:repeat(2,1fr)}}
+  .tile{background:var(--surface);border:1px solid var(--rule);border-radius:4px;
+        padding:15px 16px 16px;text-align:left;cursor:pointer;font:inherit;color:inherit}
+  .tile:hover{border-color:var(--ink)}
+  .tile[aria-pressed="true"]{background:var(--panel);border-color:var(--ink)}
+  .tile:focus-visible{outline:2px solid var(--coral);outline-offset:2px}
+  .tile .ix{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.1em}
+  .tile .n{font-weight:300;font-size:38px;line-height:1;letter-spacing:-.04em;margin-top:8px;
+           font-variant-numeric:tabular-nums}
+  .tile .t{color:var(--muted);font-size:12.5px;margin-top:6px}
+  .tile.alert .n{color:var(--red)}
+  .panel{border:1px solid var(--rule);border-radius:4px;background:var(--surface);
+         padding:20px;margin-top:10px}
+  .lab{display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;
+       text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+  .buckets{display:grid;gap:26px 34px;grid-template-columns:1fr 1fr;margin-top:14px}
+  @media(max-width:760px){.buckets{grid-template-columns:1fr}}
+  .bk h3{margin:0 0 9px;font-size:15px;font-weight:500;display:flex;align-items:baseline;gap:8px}
+  .bk h3 .n{font-family:var(--mono);font-size:11px;color:var(--cream);background:var(--ink);
+             border-radius:999px;padding:2px 8px}
+  .bk ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:11px}
+  .bk li{border-left:3px solid var(--rule);padding-left:11px}
+  .bk li.act{border-left-color:var(--red)}
+  .bk li.warn{border-left-color:var(--olive)}
+  .bk li.info{border-left-color:var(--sky)}
+  .bk .t{display:block;font-size:14px}
+  .bk .d{display:block;color:var(--muted);font-size:12.5px;margin-top:1px}
+  .bk .w{display:block;font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:2px}
+  .todo li{display:flex;align-items:flex-start;gap:12px;padding:12px 18px;
+           border-bottom:1px solid var(--rule)}
+  .todo li:last-child{border-bottom:0}
+  .todo input[type=checkbox]{margin-top:3px;width:17px;height:17px;accent-color:var(--red);
+                             flex:none;cursor:pointer}
+  .todo .tx{flex:1;min-width:0}
+  .todo .done .tx{text-decoration:line-through;color:var(--muted)}
+  .todo .wh{font-family:var(--mono);font-size:11.5px;color:var(--muted);display:block;margin-top:2px}
+  .addrow{display:flex;gap:8px;padding:12px 18px;border-top:1px solid var(--rule);flex-wrap:wrap}
+  .addrow input[type=text]{flex:1;min-width:180px;font:inherit;font-size:13.5px;padding:8px 11px;
+      border:1px solid var(--rule);border-radius:7px;background:var(--cream);color:var(--ink)}
+  .addrow button{font:inherit;font-size:13px;padding:8px 16px;border-radius:7px;cursor:pointer;
+      border:1px solid var(--ink);background:var(--ink);color:var(--cream)}
+  .addrow button[disabled]{opacity:.5;cursor:default}
+  .addrow a.edit{font-size:13px;color:var(--red);text-decoration:none}
+  .addrow a.edit:hover{text-decoration:underline}
+  .todo .tick{width:17px;height:17px;flex:none;margin-top:3px;border:1.5px solid var(--rule);
+              border-radius:3px;display:inline-block}
+  .todo .done .tick{background:var(--red);border-color:var(--red)}
+  h2{font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);
+     font-weight:500;margin:38px 0 12px}
+  h2 .c{color:var(--red);margin-left:7px}
+  .card{background:var(--surface);border:1px solid var(--rule);border-radius:4px}
+  .pad{padding:18px 20px}
+  ul.fl{list-style:none;margin:0;padding:0}
+  .fi{display:grid;grid-template-columns:1fr auto;gap:4px 16px;padding:13px 18px 13px 15px;
+      border-bottom:1px solid var(--rule);border-left:4px solid var(--rule)}
+  .fi:last-child{border-bottom:0}
+  .fi.act{border-left-color:var(--red)}
+  .fi.warn{border-left-color:var(--olive)}
+  .fi.info{border-left-color:var(--sky)}
+  .fi .t{font-weight:500;font-size:14.5px}
+  .fi .d{grid-column:1;color:var(--muted);font-size:12.8px}
+  .fi .w{grid-column:1;font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+  .fi .m{grid-row:1 / 4;align-self:center;font-size:12.5px;background:var(--panel);
+         padding:5px 11px;border-radius:999px;white-space:nowrap}
+  @media(max-width:640px){.fi{grid-template-columns:1fr}
+    .fi .m{grid-row:auto;justify-self:start}}
+  .two{display:grid;gap:12px;grid-template-columns:1fr 1fr}
+  @media(max-width:760px){.two{grid-template-columns:1fr}}
+  .crow{display:grid;grid-template-columns:minmax(0,auto) 1fr 32px;gap:11px;align-items:center;
+        padding:6px 0}
+  .ctrack{height:9px;background:var(--panel);border-radius:2px;overflow:hidden}
+  .ctrack div{height:100%}
+  .chart{display:flex;align-items:flex-end;gap:6px;height:104px;padding-top:6px}
+  .wbar{flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%;
+        min-width:0;gap:5px}
+  .wbar>div{background:var(--sky);border-radius:2px 2px 0 0;min-height:2px}
+  .wbar span{text-align:center;font-size:10px;color:var(--muted)}
+  .controls{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 12px}
+  select{font:inherit;font-size:13px;padding:7px 10px;border:1px solid var(--rule);
+         border-radius:7px;background:var(--surface);color:var(--ink)}
+  .scroll{overflow-x:auto}
+  table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:520px}
+  th{text-align:left;font-weight:500;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;
+     color:var(--muted);padding:11px 14px;background:var(--panel);white-space:nowrap}
+  td{padding:10px 14px;border-top:1px solid var(--rule);vertical-align:top}
+  .mono{font-family:var(--mono);font-size:12.5px}
+  .num{font-variant-numeric:tabular-nums;text-align:right}
+  .crit{color:var(--red);font-weight:500}
+  .dim{color:var(--muted)}
+  .pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:10.5px;color:#fff;
+        white-space:nowrap;font-weight:500}
+  .new{background:var(--coral);color:#fff;padding:1px 7px;border-radius:999px;font-size:10px;
+       margin-left:6px}
+  .empty{padding:20px;color:var(--muted)}
+  .note{color:var(--muted);font-size:12.5px;line-height:1.7;margin-top:12px}
+  footer{border-top:1px solid var(--rule);margin-top:44px;padding-block:18px 0;
+         color:var(--muted);font-size:12px;line-height:1.7}
+  footer a{color:var(--red)}
+</style>
+</head>
+<body>
+
+<div class="band"><div class="in mast">
+  <h1>Fire Alarm Board</h1>
+  <div class="right">
+    <span class="fresh" id="fresh"></span>
+    <label class="auto"><input type="checkbox" id="autoref" checked> auto</label>
+    <button class="rf" id="refresh" type="button">Refresh</button>
+  </div>
+</div></div>
+
+<main class="in">
+  <div class="jump" id="jump"></div>
+
+  <div class="caps" id="caps"></div>
+  <div class="tiles" id="tiles" role="group" aria-label="At a glance"></div>
+
+  <section class="panel" aria-labelledby="needs-h">
+    <span class="lab" id="needs-h">What needs you</span>
+    <div class="buckets" id="needs"></div>
+  </section>
+
+  <h2>My to-do list</h2>
+  <div class="card">
+    <ul class="todo" id="todo" style="list-style:none;margin:0;padding:0"></ul>
+    <div class="addrow" style="justify-content:flex-end">
+      <a href="https://docs.google.com/spreadsheets/d/1IeejJAvLHRaiVb8t-k9Yoytqq1SpfhZf5kKEiAy8cPY/edit#gid=945347124" target="_blank" rel="noopener" class="edit">Edit the list in the sheet &rarr;</a>
+    </div>
+  </div>
+
+  <h2>New in the last 7 days</h2>
+  <div class="card" id="newbox"></div>
+
+  <h2>Triggering repeatedly &mdash; 3 or more in 90 days</h2>
+  <div class="card scroll" id="queue"></div>
+  <div class="note">A <b>zone</b> row groups the rooms behind one detector group, the way Alma
+  House count. A <b>room</b> row is one location. Both appear because a zone can be busy while no
+  single room in it crosses the threshold.</div>
+
+  <div class="two" style="margin-top:34px">
+    <div class="card pad">
+      <h2 style="margin-top:0">What caused them &mdash; last 30 days</h2>
+      <div id="cats"></div>
+    </div>
+    <div class="card pad">
+      <h2 style="margin-top:0">Activations per week &mdash; last 10 weeks</h2>
+      <div class="chart" id="wk"></div>
+    </div>
+  </div>
+
+  <h2>Every activation</h2>
+  <div class="controls">
+    <select id="fArea"><option value="">Everywhere</option><option>Alma House</option><option>NBR</option></select>
+    <select id="fCat"><option value="">Every category</option></select>
+    <select id="fDays">
+      <option value="7">Last 7 days</option>
+      <option value="30" selected>Last 30 days</option>
+      <option value="90">Last 90 days</option>
+      <option value="120">Last 120 days</option>
+    </select>
+  </div>
+  <div class="card scroll" id="tbl"></div>
+
+  <footer id="foot"></footer>
+</main>
+
+<script>
+var DATA = {"acts": [{"date": "2026-06-25", "time": "1123hrs", "area": "NBR", "where": "L5 Unit #05-05 — Surge", "zone": "", "cause": "Dust / works", "cat": "Works", "ago": 120}, {"date": "2026-06-27", "time": "0411hrs", "area": "NBR", "where": "L4 Unit #04-20 — Somma Lab", "zone": "", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 118}, {"date": "2026-06-27", "time": "1527hrs", "area": "NBR", "where": "L2 Unit #02-04/05 — The Missing Piece", "zone": "", "cause": "Incense / candle", "cat": "Behavioural", "ago": 118}, {"date": "2026-06-28", "time": "1322hrs", "area": "Alma House", "where": "L2 Alma House — room not identified", "zone": "", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 117}, {"date": "2026-07-03", "time": "0003hrs", "area": "NBR", "where": "L1 CS Fresh Toilet", "zone": "", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 112}, {"date": "2026-07-03", "time": "0845hrs", "area": "NBR", "where": "L1 CS Fresh Toilet", "zone": "", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 112}, {"date": "2026-07-04", "time": "2002hrs", "area": "Alma House", "where": "L3 Alma House Room #336", "zone": "ZA03-14", "cause": "Cooking", "cat": "Behavioural", "ago": 111}, {"date": "2026-07-05", "time": "1858hrs", "area": "Alma House", "where": "L2 Alma House Room #211", "zone": "ZA02-12", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 110}, {"date": "2026-07-07", "time": "1611hrs", "area": "Alma House", "where": "L2 Alma House Room #233", "zone": "ZA02-15", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 108}, {"date": "2026-07-08", "time": "2359hrs", "area": "Alma House", "where": "L2 Alma House — room not identified", "zone": "", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 107}, {"date": "2026-07-10", "time": "0243hrs", "area": "NBR", "where": "L4 Toilet", "zone": "", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 105}, {"date": "2026-07-11", "time": "2349hrs", "area": "NBR", "where": "L1 Unit #01-03 — Kotuwa", "zone": "", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 104}, {"date": "2026-07-13", "time": "0625hrs", "area": "Alma House", "where": "L2 Alma House Room #212", "zone": "ZA02-12", "cause": "Shower / steam", "cat": "Behavioural", "ago": 102}, {"date": "2026-07-22", "time": "0843hrs", "area": "Alma House", "where": "L3 Alma House Room #325", "zone": "ZA03-13", "cause": "Cooking", "cat": "Behavioural", "ago": 93}, {"date": "2026-07-22", "time": "1850hrs", "area": "NBR", "where": "L2 Unit #02-04 — The Missing Piece", "zone": "", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 93}, {"date": "2026-07-22", "time": "1924hrs", "area": "NBR", "where": "L1 Unit #01-01 — San Shu Gong", "zone": "", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 93}, {"date": "2026-07-22", "time": "1936hrs", "area": "NBR", "where": "L2 Unit #02-04 — The Missing Piece", "zone": "", "cause": "Faulty detector", "cat": "Detector / unexplained", "ago": 93}, {"date": "2026-07-23", "time": "0741hrs", "area": "NBR", "where": "L1 Unit #01-09 — CS Fresh", "zone": "", "cause": "Cooking", "cat": "Behavioural", "ago": 92}, {"date": "2026-07-23", "time": "2341hrs", "area": "NBR", "where": "L2 ZA02-14", "zone": "", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 92}, {"date": "2026-07-24", "time": "0153hrs", "area": "NBR", "where": "L4 Unit #04-08", "zone": "", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 91}, {"date": "2026-07-24", "time": "1035hrs", "area": "NBR", "where": "L5 Unit #05-01", "zone": "", "cause": "Faulty detector", "cat": "Detector / unexplained", "ago": 91}, {"date": "2026-07-24", "time": "1313hrs", "area": "Alma House", "where": "L3 Alma House Room #312", "zone": "ZA03-11", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 91}, {"date": "2026-07-24", "time": "2055hrs", "area": "Alma House", "where": "L3 Alma House ZA03-11", "zone": "ZA03-11", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 91}, {"date": "2026-08-01", "time": "0816hrs", "area": "Alma House", "where": "L2 Alma House Room #209", "zone": "", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 83}, {"date": "2026-08-01", "time": "2023hrs", "area": "Alma House", "where": "L3 Alma House Room #329", "zone": "ZA03-13", "cause": "Shower / steam", "cat": "Behavioural", "ago": 83}, {"date": "2026-08-02", "time": "0831hrs", "area": "NBR", "where": "L3 Unit #03-05 — Sojao", "zone": "", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 82}, {"date": "2026-08-02", "time": "1112hrs", "area": "Alma House", "where": "L3 Alma House Room #305", "zone": "", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 82}, {"date": "2026-08-02", "time": "1559hrs", "area": "NBR", "where": "L1 Corridor", "zone": "", "cause": "Dust / works", "cat": "Works", "ago": 82}, {"date": "2026-08-03", "time": "1054hrs", "area": "Alma House", "where": "L3 Alma House Room #309", "zone": "", "cause": "Cooking", "cat": "Behavioural", "ago": 81}, {"date": "2026-08-04", "time": "0815hrs", "area": "Alma House", "where": "L3 Alma House Room #313", "zone": "ZA03-11", "cause": "Cooking", "cat": "Behavioural", "ago": 80}, {"date": "2026-08-04", "time": "0935hrs", "area": "Alma House", "where": "L3 Alma House — room not identified", "zone": "", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 80}, {"date": "2026-08-05", "time": "2200hrs", "area": "Alma House", "where": "L2 Alma House Room #216", "zone": "", "cause": "Cooking", "cat": "Behavioural", "ago": 79}, {"date": "2026-08-06", "time": "2042hrs", "area": "Alma House", "where": "L2 Alma House Room #216", "zone": "", "cause": "Cooking", "cat": "Behavioural", "ago": 78}, {"date": "2026-08-07", "time": "1419hrs", "area": "Alma House", "where": "L2 Alma House — room not identified", "zone": "", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 77}, {"date": "2026-08-07", "time": "1607hrs", "area": "Alma House", "where": "L2 Alma House Room #225", "zone": "ZA02-14", "cause": "Cooking", "cat": "Behavioural", "ago": 77}, {"date": "2026-08-07", "time": "1939hrs", "area": "NBR", "where": "L1 Unit #01-01 — San Shu Gong", "zone": "", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 77}, {"date": "2026-08-07", "time": "2349hrs", "area": "Alma House", "where": "L2 Alma House Room #215", "zone": "ZA02-12", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 77}, {"date": "2026-08-08", "time": "0206hrs", "area": "NBR", "where": "L4 ZA04-19", "zone": "", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 76}, {"date": "2026-08-09", "time": "0027hrs", "area": "Alma House", "where": "L3 Alma House Room #312", "zone": "ZA03-11", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 75}, {"date": "2026-08-09", "time": "1118hrs", "area": "Alma House", "where": "L2 Alma House Room #231", "zone": "ZA02-14", "cause": "Shower / steam", "cat": "Behavioural", "ago": 75}, {"date": "2026-08-09", "time": "1304hrs", "area": "NBR", "where": "L3 Unit #03-07 — RYE", "zone": "", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 75}, {"date": "2026-08-11", "time": "1346hrs", "area": "NBR", "where": "L4 Unit #04-07/09 — Thrive", "zone": "", "cause": "Cooking", "cat": "Behavioural", "ago": 73}, {"date": "2026-08-11", "time": "1838hrs", "area": "NBR", "where": "L4 Unit #04-07/09 — Thrive", "zone": "", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 73}, {"date": "2026-08-13", "time": "1401hrs", "area": "Alma House", "where": "L2 Alma House Room #203", "zone": "", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 71}, {"date": "2026-08-14", "time": "1935hrs", "area": "Alma House", "where": "L2 Alma House Room #225", "zone": "ZA02-14", "cause": "Cooking", "cat": "Behavioural", "ago": 70}, {"date": "2026-08-15", "time": "0822hrs", "area": "NBR", "where": "L4 Unit #04-07/09 — Thrive", "zone": "", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 69}, {"date": "2026-08-16", "time": "1101hrs", "area": "Alma House", "where": "L3 Alma House — room not identified", "zone": "", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 68}, {"date": "2026-08-16", "time": "2008hrs", "area": "NBR", "where": "L3 Unit #03-07/08 — RYE", "zone": "", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 68}, {"date": "2026-08-18", "time": "0913hrs", "area": "Alma House", "where": "L3 Alma House Room #309", "zone": "", "cause": "Cooking", "cat": "Behavioural", "ago": 66}, {"date": "2026-08-23", "time": "0901hrs", "area": "Alma House", "where": "L2 Alma House Room #235", "zone": "ZA02-15", "cause": "Cooking", "cat": "Behavioural", "ago": 61}, {"date": "2026-08-24", "time": "1021hrs", "area": "Alma House", "where": "L3 Alma House Room #335", "zone": "", "cause": "Cooking", "cat": "Behavioural", "ago": 60}, {"date": "2026-08-24", "time": "1542hrs", "area": "Alma House", "where": "L3 Alma House — room not identified", "zone": "", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 60}, {"date": "2026-08-24", "time": "1615hrs", "area": "Alma House", "where": "L3 Alma House — room not identified", "zone": "", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 60}, {"date": "2026-08-25", "time": "1926hrs", "area": "Alma House", "where": "L3 Alma House Room #337", "zone": "ZA03-14", "cause": "Shower / steam", "cat": "Behavioural", "ago": 59}, {"date": "2026-08-26", "time": "0838hrs", "area": "Alma House", "where": "L3 Alma House Room #320", "zone": "ZA03-12", "cause": "Shower / steam", "cat": "Behavioural", "ago": 58}, {"date": "2026-08-26", "time": "2120hrs", "area": "Alma House", "where": "L3 Alma House Room #307", "zone": "ZA03-10", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 58}, {"date": "2026-08-28", "time": "2205hrs", "area": "NBR", "where": "L2 Unit #02-07/08 — Soilboy", "zone": "", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 56}, {"date": "2026-08-30", "time": "0450hrs", "area": "NBR", "where": "L2 Unit #02-10 — Make By Ginlee", "zone": "", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 54}, {"date": "2026-09-02", "time": "1200hrs", "area": "Alma House", "where": "L2 Alma House ZA02-29", "zone": "ZA02-29", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 51}, {"date": "2026-09-04", "time": "0145hrs", "area": "Alma House", "where": "L3 Alma House ZA03-10", "zone": "ZA03-10", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 49}, {"date": "2026-09-04", "time": "0751hrs", "area": "Alma House", "where": "L3 Alma House ZA03-10", "zone": "ZA03-10", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 49}, {"date": "2026-09-04", "time": "0823hrs", "area": "Alma House", "where": "L3 Alma House ZA03-10", "zone": "ZA03-10", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 49}, {"date": "2026-09-04", "time": "1429hrs", "area": "Alma House", "where": "L3 Alma House ZA03-10", "zone": "ZA03-10", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 49}, {"date": "2026-09-05", "time": "0236hrs", "area": "NBR", "where": "L4 Unit #04-08/10 — Thrive", "zone": "", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 48}, {"date": "2026-09-05", "time": "0714hrs", "area": "NBR", "where": "L1 Unit #01-07/08 — Beyond The Vines", "zone": "", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 48}, {"date": "2026-09-05", "time": "0956hrs", "area": "Alma House", "where": "L2 Alma House Room #237", "zone": "ZA02-15", "cause": "Faulty detector", "cat": "Detector / unexplained", "ago": 48}, {"date": "2026-09-06", "time": "0014hrs", "area": "Alma House", "where": "L3 Alma House ZA03-10", "zone": "ZA03-10", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 47}, {"date": "2026-09-06", "time": "1001hrs", "area": "Alma House", "where": "L3 Alma House — room not identified", "zone": "", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 47}, {"date": "2026-09-07", "time": "0823hrs", "area": "Alma House", "where": "L3 Alma House ZA03-11", "zone": "ZA03-11", "cause": "Incense / candle", "cat": "Behavioural", "ago": 46}, {"date": "2026-09-08", "time": "2105hrs", "area": "Alma House", "where": "L3 Alma House Room #310", "zone": "", "cause": "Cooking", "cat": "Behavioural", "ago": 45}, {"date": "2026-09-09", "time": "0737hrs", "area": "Alma House", "where": "L3 Alma House Room #340", "zone": "ZA03-15", "cause": "Cooking", "cat": "Behavioural", "ago": 44}, {"date": "2026-09-09", "time": "0925hrs", "area": "Alma House", "where": "L2 Alma House Room #231", "zone": "ZA02-14", "cause": "Cooking", "cat": "Behavioural", "ago": 44}, {"date": "2026-09-09", "time": "1613hrs", "area": "NBR", "where": "L1 Unit #01-01 — San Shu Gong", "zone": "", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 44}, {"date": "2026-09-10", "time": "1620hrs", "area": "NBR", "where": "L4 Unit #04-08/10 — Thrive", "zone": "", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 43}, {"date": "2026-09-11", "time": "0617hrs", "area": "NBR", "where": "L4 Unit #04-07/09 — Thrive", "zone": "", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 42}, {"date": "2026-09-11", "time": "1239hrs", "area": "NBR", "where": "L4 Unit #04-03 — Future Resonance", "zone": "", "cause": "Incense / candle", "cat": "Behavioural", "ago": 42}, {"date": "2026-09-11", "time": "2201hrs", "area": "Alma House", "where": "L2 Alma House Room #216", "zone": "", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 42}, {"date": "2026-09-12", "time": "0921hrs", "area": "NBR", "where": "L4 Unit #04-12/13 — Top Table", "zone": "", "cause": "Heat / steam from equipment", "cat": "Behavioural", "ago": 41}, {"date": "2026-09-14", "time": "2139hrs", "area": "NBR", "where": "L1 Unit #01-01 — San Shu Gong", "zone": "", "cause": "Other - see remarks", "cat": "Detector / unexplained", "ago": 39}, {"date": "2026-09-17", "time": "0700hrs", "area": "Alma House", "where": "L2 Alma House Room #231", "zone": "ZA02-14", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 36}, {"date": "2026-09-17", "time": "1606hrs", "area": "NBR", "where": "L4 Unit #04-07/09 — Thrive", "zone": "", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 36}, {"date": "2026-09-18", "time": "0748hrs", "area": "Alma House", "where": "L3 Alma House ZA03-10", "zone": "ZA03-10", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 35}, {"date": "2026-09-18", "time": "1308hrs", "area": "Alma House", "where": "L3 Alma House ZA03-10", "zone": "ZA03-10", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 35}, {"date": "2026-09-18", "time": "1854hrs", "area": "Alma House", "where": "L3 Alma House ZA03-10", "zone": "ZA03-10", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 35}, {"date": "2026-09-19", "time": "1423hrs", "area": "NBR", "where": "L1 Unit #01-01 — San Shu Gong", "zone": "", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 34}, {"date": "2026-09-21", "time": "1010hrs", "area": "Alma House", "where": "L2 Alma House Room #225", "zone": "ZA02-14", "cause": "Cooking", "cat": "Behavioural", "ago": 32}, {"date": "2026-09-21", "time": "2145hrs", "area": "NBR", "where": "L3 Unit #03-08 — PeiPer", "zone": "", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 32}, {"date": "2026-09-22", "time": "2101hrs", "area": "Alma House", "where": "L3 Alma House Room #332", "zone": "ZA03-14", "cause": "Cooking", "cat": "Behavioural", "ago": 31}, {"date": "2026-09-23", "time": "0310hrs", "area": "Alma House", "where": "L2 Alma House — room not identified", "zone": "", "cause": "Other - see remarks", "cat": "Detector / unexplained", "ago": 30}, {"date": "2026-09-25", "time": "0124hrs", "area": "Alma House", "where": "L2 Alma House — room not identified", "zone": "", "cause": "Other - see remarks", "cat": "Detector / unexplained", "ago": 28}, {"date": "2026-09-25", "time": "1116hrs", "area": "Alma House", "where": "L3 Alma House — room not identified", "zone": "", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 28}, {"date": "2026-09-25", "time": "1207hrs", "area": "Alma House", "where": "L3 Alma House — room not identified", "zone": "", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 28}, {"date": "2026-09-26", "time": "0955hrs", "area": "Alma House", "where": "L3 Alma House Room #315", "zone": "", "cause": "Cooking", "cat": "Behavioural", "ago": 27}, {"date": "2026-09-26", "time": "0955hrs", "area": "Alma House", "where": "L3 Alma House Room #303", "zone": "", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 27}, {"date": "2026-09-26", "time": "0955hrs", "area": "Alma House", "where": "L3 Alma House — room not identified", "zone": "", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 27}, {"date": "2026-09-26", "time": "1027hrs", "area": "Alma House", "where": "L3 Alma House — room not identified", "zone": "", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 27}, {"date": "2026-09-26", "time": "1435hrs", "area": "NBR", "where": "L3 Unit #03-07 — RYE", "zone": "", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 27}, {"date": "2026-09-26", "time": "1939hrs", "area": "NBR", "where": "L1 Unit #01-07 — Kotuwa", "zone": "", "cause": "Incense / candle", "cat": "Behavioural", "ago": 27}, {"date": "2026-09-27", "time": "2140hrs", "area": "NBR", "where": "L1 Unit #01-18 — Le Clos", "zone": "", "cause": "Heat / steam from equipment", "cat": "Behavioural", "ago": 26}, {"date": "2026-09-28", "time": "0840hrs", "area": "Alma House", "where": "L3 Alma House Room #336", "zone": "ZA03-14", "cause": "Shower / steam", "cat": "Behavioural", "ago": 25}, {"date": "2026-09-28", "time": "0951hrs", "area": "Alma House", "where": "L3 Alma House Room #324", "zone": "ZA03-13", "cause": "Shower / steam", "cat": "Behavioural", "ago": 25}, {"date": "2026-09-29", "time": "1154hrs", "area": "Alma House", "where": "L2 Alma House Room #233", "zone": "ZA02-15", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 24}, {"date": "2026-09-29", "time": "1937hrs", "area": "Alma House", "where": "L3 Alma House Room #326", "zone": "", "cause": "Cooking", "cat": "Behavioural", "ago": 24}, {"date": "2026-10-01", "time": "0430hrs", "area": "NBR", "where": "L1 Unit #01-02 — Artichoke", "zone": "", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 22}, {"date": "2026-10-01", "time": "0618hrs", "area": "NBR", "where": "L1 Unit #01-02 — Artichoke", "zone": "", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 22}, {"date": "2026-10-01", "time": "1406hrs", "area": "Alma House", "where": "L3 Alma House ZA03-10", "zone": "ZA03-10", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 22}, {"date": "2026-10-01", "time": "1809hrs", "area": "Alma House", "where": "L3 Alma House ZA03-10", "zone": "ZA03-10", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 22}, {"date": "2026-10-02", "time": "1038hrs", "area": "NBR", "where": "L2 Unit #02-10 — Make By Ginlee", "zone": "", "cause": "Shower / steam", "cat": "Behavioural", "ago": 21}, {"date": "2026-10-02", "time": "2236hrs", "area": "NBR", "where": "L1 Unit #01-03 — Kotuwa", "zone": "", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 21}, {"date": "2026-10-04", "time": "1418hrs", "area": "Alma House", "where": "L3 Alma House Room #329", "zone": "ZA03-13", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 19}, {"date": "2026-10-04", "time": "2356hrs", "area": "NBR", "where": "L3 Unit #03-02", "zone": "", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 19}, {"date": "2026-10-05", "time": "0345hrs", "area": "NBR", "where": "L3 Unit #03-02", "zone": "", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 18}, {"date": "2026-10-05", "time": "0623hrs", "area": "NBR", "where": "L3 Unit #03-02", "zone": "", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 18}, {"date": "2026-10-05", "time": "1603hrs", "area": "Alma House", "where": "L3 Alma House Room #337", "zone": "ZA03-14", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 18}, {"date": "2026-10-07", "time": "2237hrs", "area": "Alma House", "where": "L3 Alma House Room #315", "zone": "", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 16}, {"date": "2026-10-09", "time": "0824hrs", "area": "NBR", "where": "L1 Unit #01-06", "zone": "", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 14}, {"date": "2026-10-10", "time": "1914hrs", "area": "NBR", "where": "L1 Unit #01-01 — San Shu Gong", "zone": "", "cause": "Incense / candle", "cat": "Behavioural", "ago": 13}, {"date": "2026-10-11", "time": "1219hrs", "area": "NBR", "where": "L4 Unit #04-01/02 — Somma Lab", "zone": "", "cause": "Incense / candle", "cat": "Behavioural", "ago": 12}, {"date": "2026-10-11", "time": "1748hrs", "area": "NBR", "where": "L1 Unit #01-15 — Huevos", "zone": "", "cause": "Other - see remarks", "cat": "Detector / unexplained", "ago": 12}, {"date": "2026-10-12", "time": "0815hrs", "area": "Alma House", "where": "L2 Alma House Room #207", "zone": "ZA02-29", "cause": "Dust / works", "cat": "Works", "ago": 11}, {"date": "2026-10-12", "time": "1308hrs", "area": "Alma House", "where": "L3 Alma House Room #320", "zone": "ZA03-12", "cause": "Dust / works", "cat": "Works", "ago": 11}, {"date": "2026-10-13", "time": "0741hrs", "area": "Alma House", "where": "L3 Alma House — room not identified", "zone": "", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 10}, {"date": "2026-10-14", "time": "0524hrs", "area": "Alma House", "where": "L2 Alma House Room #207", "zone": "ZA02-29", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 9}, {"date": "2026-10-14", "time": "0849hrs", "area": "Alma House", "where": "L3 Alma House Room #332", "zone": "ZA03-14", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 9}, {"date": "2026-10-16", "time": "1304hrs", "area": "NBR", "where": "L3 Unit #03-07/08 — RYE", "zone": "", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 7}, {"date": "2026-10-17", "time": "0917hrs", "area": "NBR", "where": "L2 Unit #02-04 — The Missing Piece", "zone": "", "cause": "Cooking", "cat": "Behavioural", "ago": 6}, {"date": "2026-10-17", "time": "1903hrs", "area": "NBR", "where": "L1 Corridor", "zone": "", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 6}, {"date": "2026-10-19", "time": "1004hrs", "area": "Alma House", "where": "L3 Alma House Room #339", "zone": "ZA03-15", "cause": "Cooking", "cat": "Behavioural", "ago": 4}, {"date": "2026-10-22", "time": "1358hrs", "area": "Alma House", "where": "L3 Alma House Room #308", "zone": "ZA03-11", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 1}, {"date": "2026-10-23", "time": "0043hrs", "area": "NBR", "where": "L1 Unit #01-03 — Kotuwa", "zone": "", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 0}, {"date": "2026-10-23", "time": "0124hrs", "area": "NBR", "where": "L4 Unit #04-19/20 — The Potter's Guilt", "zone": "", "cause": "No cause found", "cat": "Detector / unexplained", "ago": 0}], "open": [{"where": "L3 Alma House ZA03-14 (#332, #336, #337)", "area": "Alma House", "grouping": "zone", "n90": 5, "n30": 4, "needs": "Behavioural", "status": "no fix on record - on tracker"}, {"where": "L3 Unit #03-02", "area": "NBR", "grouping": "room", "n90": 3, "n30": 3, "needs": "Detector", "status": "no fix on record - NOT ON TRACKER"}, {"where": "L3 Alma House ZA03-10 (#307)", "area": "Alma House", "grouping": "zone", "n90": 11, "n30": 2, "needs": "Detector", "status": "no fix on record - on tracker"}, {"where": "L3 Alma House ZA03-10", "area": "Alma House", "grouping": "room", "n90": 10, "n30": 2, "needs": "Detector", "status": "no fix on record - on tracker"}, {"where": "L1 Unit #01-01 — San Shu Gong", "area": "NBR", "grouping": "room", "n90": 6, "n30": 2, "needs": "Detector", "status": "STILL TRIGGERING - 5 since Change of SSG toilet SD 23 Jul"}, {"where": "L3 Alma House ZA03-13 (#324, #325, #329)", "area": "Alma House", "grouping": "zone", "n90": 4, "n30": 2, "needs": "Behavioural", "status": "no fix on record - on tracker"}, {"where": "L2 Alma House ZA02-29 (#207)", "area": "Alma House", "grouping": "zone", "n90": 3, "n30": 2, "needs": "Detector", "status": "no fix on record - on tracker"}, {"where": "L2 Alma House ZA02-14 (#225, #231)", "area": "Alma House", "grouping": "zone", "n90": 6, "n30": 1, "needs": "Behavioural", "status": "no fix on record - on tracker"}, {"where": "L2 Unit #02-04 — The Missing Piece", "area": "NBR", "grouping": "room", "n90": 3, "n30": 1, "needs": "Detector", "status": "no fix on record - NOT ON TRACKER"}, {"where": "L2 Alma House Room #225", "area": "Alma House", "grouping": "room", "n90": 3, "n30": 1, "needs": "Behavioural", "status": "no fix on record - on tracker"}, {"where": "L2 Alma House ZA02-15 (#233, #235, #237)", "area": "Alma House", "grouping": "zone", "n90": 3, "n30": 1, "needs": "Detector", "status": "no fix on record - on tracker"}, {"where": "L4 Unit #04-07/09 — Thrive", "area": "NBR", "grouping": "room", "n90": 5, "n30": 0, "needs": "Detector", "status": "no fix on record - NOT ON TRACKER"}, {"where": "L3 Alma House ZA03-11 (#312, #313)", "area": "Alma House", "grouping": "zone", "n90": 5, "n30": 0, "needs": "Detector", "status": "no fix on record - on tracker"}, {"where": "L2 Alma House Room #216", "area": "Alma House", "grouping": "room", "n90": 3, "n30": 0, "needs": "Behavioural", "status": "no fix on record - on tracker"}, {"where": "L2 Alma House Room #231", "area": "Alma House", "grouping": "room", "n90": 3, "n30": 0, "needs": "Behavioural", "status": "no fix on record - on tracker"}], "flags": [{"sev": "act", "area": "NBR", "bucket": "Send a message", "title": "Second behavioural trigger — send the WhatsApp notice", "detail": "3 in 12 months. Most recent 23 Jul, cooking. Previous 14 May.", "where": "L1 Unit #01-09 — CS Fresh", "act": "Send the second-occurrence message"}, {"sev": "act", "area": "NBR", "bucket": "Send a message", "title": "Second behavioural trigger — send the WhatsApp notice", "detail": "3 in 12 months. Most recent 11 Oct, incense / candle. Previous 28 Mar.", "where": "L4 Unit #04-01/02 — Somma Lab", "act": "Send the second-occurrence message"}, {"sev": "act", "area": "NBR", "bucket": "Send a message", "title": "Second behavioural trigger — send the WhatsApp notice", "detail": "2 in 12 months. Most recent 02 Oct, shower / steam. Previous 01 Jan.", "where": "L2 Unit #02-10 — Make By Ginlee", "act": "Send the second-occurrence message"}, {"sev": "act", "area": "NBR", "bucket": "Send a message", "title": "Second behavioural trigger — send the WhatsApp notice", "detail": "2 in 12 months. Most recent 27 Jun, incense / candle. Previous 30 Mar.", "where": "L2 Unit #02-04/05 — The Missing Piece", "act": "Send the second-occurrence message"}, {"sev": "act", "area": "NBR", "bucket": "Send a message", "title": "Second behavioural trigger — send the WhatsApp notice", "detail": "2 in 12 months. Most recent 27 Sep, heat / steam from equipment. Previous 19 May.", "where": "L1 Unit #01-18 — Le Clos", "act": "Send the second-occurrence message"}, {"sev": "act", "area": "NBR", "bucket": "Send a message", "title": "Second behavioural trigger — send the WhatsApp notice", "detail": "2 in 12 months. Most recent 11 Sep, incense / candle. Previous 17 Jun.", "where": "L4 Unit #04-03 — Future Resonance", "act": "Send the second-occurrence message"}, {"sev": "info", "area": "NBR", "bucket": "Send a message", "title": "Behavioural trigger — send the first notice", "detail": "First in 12 months. 17 Oct, cooking.", "where": "L2 Unit #02-04 — The Missing Piece", "act": "Send the first-occurrence message"}, {"sev": "act", "area": "NBR", "bucket": "Put on the tracker", "title": "Repeat location is not on the tracker", "detail": "5 activations in 90 days, 0 of them in the last 30", "where": "L4 Unit #04-07/09 — Thrive", "act": "Add it to the Tracker tab"}, {"sev": "act", "area": "NBR", "bucket": "Put on the tracker", "title": "Repeat location is not on the tracker", "detail": "3 activations in 90 days, 3 of them in the last 30", "where": "L3 Unit #03-02", "act": "Add it to the Tracker tab"}, {"sev": "warn", "area": "NBR", "bucket": "Chase a fix", "title": "A completed fix is not holding", "detail": "STILL TRIGGERING - 5 since Change of SSG toilet SD 23 Jul", "where": "L1 Unit #01-01 — San Shu Gong", "act": "Decide whether to escalate with the contractor"}, {"sev": "warn", "area": "Alma House", "bucket": "Chase a fix", "title": "Triggering repeatedly right now", "detail": "3 activations in the last 30 days", "where": "L3 Alma House ZA03-14 (#332, #336, #337)", "act": "Chase the rectification"}, {"sev": "warn", "area": "Alma House", "bucket": "For the Alma House file", "title": "After-hours activation at Alma House", "detail": "23 Sep at 0310hrs, outside the hours Alma House man the building", "where": "L2 ZA02-14", "act": "Counts toward the 19 Oct letter"}, {"sev": "warn", "area": "Alma House", "bucket": "For the Alma House file", "title": "After-hours activation at Alma House", "detail": "25 Sep at 0124hrs, outside the hours Alma House man the building", "where": "L2 ZA02-14", "act": "Counts toward the 19 Oct letter"}, {"sev": "warn", "area": "Alma House", "bucket": "For the Alma House file", "title": "After-hours activation at Alma House", "detail": "14 Oct at 0524hrs, outside the hours Alma House man the building", "where": "L2 Room #207", "act": "Counts toward the 19 Oct letter"}], "todo": []};
+var LINK = {"tracker": "https://docs.google.com/spreadsheets/d/1IeejJAvLHRaiVb8t-k9Yoytqq1SpfhZf5kKEiAy8cPY/edit", "scdf": "https://docs.google.com/spreadsheets/d/1TIseZO0KJU_UwH1hvKJa_fRkNcAn1YBzWhKVrBod_xw/edit", "alma": "https://docs.google.com/spreadsheets/d/1-8fFR1W3MCS2rGkJOE7m6WPkrwZLZywf_4A4grQvJbw/edit", "log": "https://docs.google.com/spreadsheets/d/1sruZ71itoN3joxhaOTcO1DUm8zF4XbxgNEyASBaTQVM/edit"};
+var AUTO_MIN = 15;
+var BUILT_MS = 1792719684208;
+DATA.age = Math.max(0, Math.round((Date.now() - BUILT_MS) / 60000));
+var AREA = '';
+
+var COLOUR = {
+  'Behavioural': 'var(--coral)', 'Detector / unexplained': 'var(--red)',
+  'Works': 'var(--olive)', 'Environment': 'var(--sky)', 'FIRE': 'var(--red)',
+  'Unclassified': 'var(--wheat)'
+};
+
+function esc(s) {
+  return String(s).replace(/[&<>"]/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+  });
+}
+function colour(cat) { return COLOUR[cat] || 'var(--wheat)'; }
+function inArea(a) { return !AREA || a === AREA; }
+function acts() {
+  return DATA.acts.filter(function (a) { return inArea(a.area); });
+}
+function pill(cat) {
+  return '<span class="pill" style="background:' + colour(cat) + '">' + esc(cat) + '</span>';
+}
+
+function head() {
+  var a = DATA.age;
+  var txt = a < 0 ? 'age unknown'
+          : a < 2 ? 'just updated'
+          : a < 90 ? 'updated ' + a + ' min ago'
+          : 'feed is ' + Math.round(a / 60) + 'h old';
+  var el = document.getElementById('fresh');
+  el.textContent = txt;
+  if (a > 90) el.className = 'fresh stale';
+  document.getElementById('caps').textContent =
+    'At a glance \u00b7 tap a box to show only that side';
+
+  document.getElementById('jump').innerHTML =
+    '<a href="' + LINK.scdf + '" target="_blank" rel="noopener"><span>' +
+    '<span class="jt">SCDF trigger tracking</span>' +
+    '<span class="jd">The monthly record to send to SCDF</span></span>' +
+    '<span class="arw">&rarr;</span></a>' +
+    '<a href="' + LINK.alma + '" target="_blank" rel="noopener"><span>' +
+    '<span class="jt">Alma House summary</span>' +
+    '<span class="jd">The record to send to Alma House</span></span>' +
+    '<span class="arw">&rarr;</span></a>';
+
+  document.getElementById('foot').innerHTML =
+    'Everything here is built from the <a href="' + LINK.log + '" target="_blank" ' +
+    'rel="noopener">fire alarm log</a> by the publisher, at 7 minutes past every hour and in ' +
+    'full at 0612hrs, and this page is rebuilt and republished every hour. ' +
+    'Nothing on it is typed by hand.<br>' +
+    '<b>Behavioural</b> &mdash; cooking, shower steam, incense, smoking, heat from equipment. ' +
+    '<b>Detector / unexplained</b> &mdash; no cause found, or a detector recorded as faulty. ' +
+    '<b>Works</b> &mdash; contractor dust or fumigation, preventable by telling us beforehand.';
+}
+
+function myFlags() {
+  return DATA.flags.filter(function (x) {
+    return !AREA || x.area === AREA || x.area === 'Both';
+  });
+}
+
+function tiles() {
+  var r = DATA.acts.filter(function (a) { return a.ago <= 30; });
+  var alma = r.filter(function (a) { return a.area === 'Alma House'; }).length;
+  var nbr = r.filter(function (a) { return a.area === 'NBR'; }).length;
+  var t = [
+    { ix: '00', n: myFlags().length, t: 'Things needing you', a: null, alert: true },
+    { ix: '01', n: r.length, t: 'Activations, last 30 days', a: '' },
+    { ix: '02', n: alma, t: 'Alma House', a: 'Alma House' },
+    { ix: '03', n: nbr, t: 'New Bahru', a: 'NBR' }
+  ];
+  document.getElementById('tiles').innerHTML = t.map(function (x) {
+    var press = x.a === null ? '' :
+      ' aria-pressed="' + (AREA === x.a ? 'true' : 'false') + '"';
+    return '<button type="button" class="tile' + (x.alert && x.n ? ' alert' : '') + '"' + press +
+      (x.a === null ? '' : ' data-a="' + x.a + '"') + '>' +
+      '<span class="ix">' + x.ix + '</span>' +
+      '<span class="n">' + x.n + '</span>' +
+      '<span class="t">' + esc(x.t) + '</span></button>';
+  }).join('');
+  Array.prototype.forEach.call(document.getElementById('tiles').querySelectorAll('button[data-a]'),
+    function (b) {
+      b.onclick = function () {
+        AREA = b.getAttribute('data-a');
+        try { localStorage.setItem('fa-area', AREA); } catch (e) {}
+        draw();
+      };
+    });
+}
+
+function flags() {
+  var f = myFlags();
+  var el = document.getElementById('needs');
+  if (!f.length) {
+    el.innerHTML = '<p class="empty" style="padding:0;margin:0">Nothing needs you. ' +
+      'Every check passed.</p>';
+    return;
+  }
+  var order = [], by = {};
+  f.forEach(function (x) {
+    var k = x.bucket || 'Chase a fix';
+    if (!by[k]) { by[k] = []; order.push(k); }
+    by[k].push(x);
+  });
+  el.innerHTML = order.map(function (k) {
+    return '<div class="bk"><h3>' + esc(k) + '<span class="n">' + by[k].length + '</span></h3><ul>' +
+      by[k].map(function (x) {
+        return '<li class="' + esc(x.sev) + '">' +
+          '<span class="t">' + esc(x.title) + '</span>' +
+          '<span class="d">' + esc(x.detail) + '</span>' +
+          (x.where ? '<span class="w">' + esc(x.where) + '</span>' : '') +
+          '</li>';
+      }).join('') + '</ul></div>';
+  }).join('');
+}
+
+function newbox() {
+  var r = acts().filter(function (a) { return a.ago <= 7; });
+  var el = document.getElementById('newbox');
+  if (!r.length) {
+    el.innerHTML = '<div class="empty">Nothing in the last seven days.</div>';
+    return;
+  }
+  el.innerHTML = '<div class="scroll"><table>' +
+    '<tr><th>When</th><th>Where</th><th>What</th><th>Category</th></tr>' +
+    r.map(function (a) {
+      return '<tr><td class="mono">' + esc(a.date.slice(5)) + ' ' + esc(a.time) +
+        (a.ago <= 1 ? '<span class="new">NEW</span>' : '') + '</td><td>' + esc(a.where) +
+        (a.zone ? ' <span class="dim mono">' + esc(a.zone) + '</span>' : '') +
+        '</td><td>' + esc(a.cause) + '</td><td>' + pill(a.cat) + '</td></tr>';
+    }).join('') + '</table></div>';
+}
+
+function queue() {
+  var o = DATA.open.filter(function (x) { return inArea(x.area); });
+  var el = document.getElementById('queue');
+  if (!o.length) {
+    el.innerHTML = '<div class="empty">Nothing is triggering repeatedly.</div>';
+    return;
+  }
+  el.innerHTML = '<table><tr><th>Location</th><th>View</th><th class="num">90d</th>' +
+    '<th class="num">30d</th><th>Needs</th><th>Status</th></tr>' +
+    o.map(function (x) {
+      return '<tr><td>' + esc(x.where) + '</td><td class="dim mono">' + esc(x.grouping) +
+        '</td><td class="num' + (x.n90 >= 5 ? ' crit' : '') + '">' + x.n90 +
+        '</td><td class="num' + (x.n30 >= 3 ? ' crit' : '') + '">' + x.n30 +
+        '</td><td>' + esc(x.needs) + '</td><td class="dim">' + esc(x.status) + '</td></tr>';
+    }).join('') + '</table>';
+}
+
+function cats() {
+  var r = acts().filter(function (a) { return a.ago <= 30; });
+  var by = {};
+  r.forEach(function (a) { by[a.cat] = (by[a.cat] || 0) + 1; });
+  var keys = Object.keys(by).sort(function (x, y) { return by[y] - by[x]; });
+  var tot = r.length || 1;
+  document.getElementById('cats').innerHTML = keys.map(function (k) {
+    return '<div class="crow"><span>' + esc(k) + '</span>' +
+      '<div class="ctrack"><div style="width:' + (by[k] / tot * 100).toFixed(1) +
+      '%;background:' + colour(k) + '"></div></div>' +
+      '<span class="mono num">' + by[k] + '</span></div>';
+  }).join('');
+}
+
+function weeks() {
+  var b = [], w;
+  for (w = 9; w >= 0; w--) {
+    b.push(acts().filter(function (a) { return Math.floor(a.ago / 7) === w; }).length);
+  }
+  var mx = Math.max.apply(null, b.concat([1]));
+  document.getElementById('wk').innerHTML = b.map(function (n) {
+    return '<div class="wbar"><div style="height:' + Math.round(n / mx * 100) + '%"></div>' +
+      '<span class="mono">' + (n || '') + '</span></div>';
+  }).join('');
+}
+
+function table() {
+  var area = document.getElementById('fArea').value;
+  var cat = document.getElementById('fCat').value;
+  var days = +document.getElementById('fDays').value;
+  var r = acts().filter(function (a) {
+    return (!area || a.area === area) && (!cat || a.cat === cat) && a.ago <= days;
+  });
+  var el = document.getElementById('tbl');
+  if (!r.length) { el.innerHTML = '<div class="empty">Nothing matches.</div>'; return; }
+  el.innerHTML = '<table><tr><th>Date</th><th>Time</th><th>Area</th><th>Location</th>' +
+    '<th>Cause</th><th>Category</th></tr>' +
+    r.map(function (a) {
+      return '<tr><td class="mono">' + esc(a.date) + '</td><td class="mono">' + esc(a.time) +
+        '</td><td>' + esc(a.area) + '</td><td>' + esc(a.where) + '</td><td>' + esc(a.cause) +
+        '</td><td>' + pill(a.cat) + '</td></tr>';
+    }).join('') + '</table>';
+}
+
+function draw() {
+  tiles(); flags(); newbox(); queue(); cats(); weeks(); table();
+}
+
+function todo() {
+  var el = document.getElementById('todo');
+  var t = DATA.todo || [];
+  if (!t.length) {
+    el.innerHTML = '<li style="color:var(--muted);padding:16px 18px">' +
+      'Nothing on your list. Add to it in the sheet.</li>';
+    return;
+  }
+  var openFirst = t.filter(function (x) { return !x.done; })
+    .concat(t.filter(function (x) { return x.done; }));
+  el.innerHTML = openFirst.map(function (x) {
+    return '<li class="' + (x.done ? 'done' : '') + '"><span class="tick"></span>' +
+      '<span class="tx">' + esc(x.task) +
+      (x.where ? '<span class="wh">' + esc(x.where) + '</span>' : '') + '</span></li>';
+  }).join('');
+}
+
+(function () { cb.disabled = false; cb.checked = !cb.checked; })
+        .setTodoDone(cb.getAttribute('data-row'), cb.checked);
+    };
+  });
+}
+
+(function () {
+  try {
+    var saved = localStorage.getItem('fa-area');
+    if (saved === 'Alma House' || saved === 'NBR') { AREA = saved; }
+  } catch (e) {}
+
+  var btn = document.getElementById('refresh');
+  var auto = document.getElementById('autoref');
+  var timer = null;
+  function go() { btn.disabled = true; btn.textContent = 'Refreshing'; location.reload(); }
+  btn.onclick = go;
+  function arm() {
+    if (timer) { clearInterval(timer); }
+    if (auto.checked) { timer = setInterval(go, AUTO_MIN * 60000); }
+    try { localStorage.setItem('fa-auto', auto.checked ? '1' : '0'); } catch (e) {}
+  }
+  try { if (localStorage.getItem('fa-auto') === '0') { auto.checked = false; } } catch (e) {}
+  auto.onchange = arm;
+  arm();
+
+  var cs = [];
+  DATA.acts.forEach(function (a) { if (a.cat && cs.indexOf(a.cat) < 0) { cs.push(a.cat); } });
+  cs.sort();
+  document.getElementById('fCat').innerHTML = '<option value="">Every category</option>' +
+    cs.map(function (x) { return '<option>' + esc(x) + '</option>'; }).join('');
+  ['fArea', 'fCat', 'fDays'].forEach(function (id) {
+    document.getElementById(id).onchange = table;
+  });
+
+  head(); todo(); draw();
+})();
+</script>
+</body>
+</html>
